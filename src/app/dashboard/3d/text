@@ -1,0 +1,62 @@
+'use client';
+
+import React, { Suspense, useRef, useEffect } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { OrbitControls, useGLTF, PerspectiveCamera } from '@react-three/drei';
+import * as THREE from 'three';
+
+function CursorTracker() {
+  const { camera } = useThree();
+
+  useEffect(() => {
+    const trackCursor = (event) => {
+      const x = (event.clientX / window.innerWidth) * 2 - 1;
+      const y = -(event.clientY / window.innerHeight) * 2 + 1;
+      console.log('Cursor position:', {
+        x: x.toFixed(2),
+        y: y.toFixed(2)
+      });
+    };
+
+    window.addEventListener('mousemove', trackCursor);
+    return () => window.removeEventListener('mousemove', trackCursor);
+  }, []);
+
+  return null;
+}
+
+function Model({ url }) {
+  const { scene } = useGLTF(url);
+  const modelRef = useRef();
+  const { camera } = useThree();
+
+  useFrame(({ mouse }) => {
+    if (modelRef.current) {
+      // Rotate the model based on mouse position
+      const rotationY = mouse.x * Math.PI / 6; // Adjust the multiplier to control rotation sensitivity
+      modelRef.current.rotation.y = rotationY;
+      const rotationZ = mouse.y * Math.PI / -6; // Adjust the multiplier to control rotation sensitivity
+      modelRef.current.rotation.x = rotationZ;
+    }
+  });
+
+  return <primitive object={scene} ref={modelRef} position={[0, 0, -2]} />;
+}
+
+export default function ModelViewer() {
+  return (
+    <div style={{ width: '100%', height: '100vh' }}>
+      <Canvas>
+        <color attach="background" args={['#e6f2ff']} />
+        <PerspectiveCamera makeDefault position={[0, 0, 5]} fov={50} />
+        <ambientLight intensity={0.5} />
+        <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} />
+        <Suspense fallback={null}>
+          <Model url="/bar2.glb" />
+        </Suspense>
+        <CursorTracker />
+        <OrbitControls enableRotate={false} enableZoom={false} enablePan={false} />
+      </Canvas>
+    </div>
+  );
+}
